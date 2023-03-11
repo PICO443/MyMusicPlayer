@@ -3,13 +3,15 @@ package com.pico.mymusicplayer.presentation
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.pico.mymusicplayer.presentation.home.HomeScreen
+import com.pico.mymusicplayer.presentation.player.PlayerScreen
 import com.pico.mymusicplayer.ui.theme.MyMusicPlayerTheme
 
 class MainActivity : ComponentActivity() {
@@ -17,27 +19,23 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             MyMusicPlayerTheme {
-                // A surface container using the 'background' color from the theme
                 Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    modifier = Modifier
+//                        .padding(16.dp)
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background)
                 ) {
-                    Greeting("Android")
+                    PlayerScreen()
                 }
             }
         }
     }
 }
 
-@Composable
-fun Greeting(name: String) {
-    Text(text = "Hello $name!")
-}
-
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
     MyMusicPlayerTheme {
-        Greeting("Android")
+        HomeScreen()
     }
 }
