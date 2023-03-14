@@ -12,22 +12,23 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.pico.mymusicplayer.R
+import com.pico.mymusicplayer.domain.model.Song
 
 @Composable
-fun PlayerSongInfoSection(modifier: Modifier = Modifier){
+fun PlayerSongInfoSection(song: Song,modifier: Modifier = Modifier){
     Column(modifier = modifier.fillMaxWidth(),verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
         Image(modifier = Modifier.size(300.dp), contentScale = ContentScale.FillBounds,painter = painterResource(id = R.drawable.song_cover), contentDescription = "Song Cover")
         Spacer(modifier = Modifier.height(16.dp))
-        Text(text = "Song Name", style = MaterialTheme.typography.titleLarge)
-        Text(text = "Artist", style = MaterialTheme.typography.labelLarge)
+        Text(text = song.name, style = MaterialTheme.typography.titleLarge)
+        Text(text = song.artist, style = MaterialTheme.typography.labelLarge)
     }
 }
-@Preview(showSystemUi = true)
-@Composable
-fun PlayerSongInfoSectionPreview(){
-    MaterialTheme() {
-        Column(modifier = Modifier.fillMaxSize()) {
-            PlayerSongInfoSection(modifier = Modifier.weight(1f))
-        }
-    }
-}
+//@Preview(showSystemUi = true)
+//@Composable
+//fun PlayerSongInfoSectionPreview(){
+//    MaterialTheme() {
+//        Column(modifier = Modifier.fillMaxSize()) {
+//            PlayerSongInfoSection(modifier = Modifier.weight(1f))
+//        }
+//    }
+//}
