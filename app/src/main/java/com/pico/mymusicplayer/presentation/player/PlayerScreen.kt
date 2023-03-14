@@ -1,6 +1,5 @@
 package com.pico.mymusicplayer.presentation.player
 
-import android.content.ComponentName
 import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -11,18 +10,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.media3.common.MediaItem
-import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.session.MediaController
-import androidx.media3.session.SessionToken
-import com.google.common.util.concurrent.MoreExecutors
-import com.pico.mymusicplayer.data.data_source.ContentResolverHelper
 import com.pico.mymusicplayer.domain.model.Song
-import com.pico.mymusicplayer.media.PlaybackService
 import com.pico.mymusicplayer.presentation.player.components.PlayerControllersSection
 import com.pico.mymusicplayer.presentation.player.components.PlayerSongInfoSection
 
