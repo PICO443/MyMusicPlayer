@@ -30,12 +30,9 @@ fun SongListItem(
     onSongClicked: (Song) -> Unit,
     modifier: Modifier = Modifier,
     isCurrentlyPlaying: Boolean = false,
+    isPaused: Boolean = true,
     onPlayClicked: (Song) -> Unit
 ) {
-    var isPlaying by remember {
-        mutableStateOf(isCurrentlyPlaying)
-    }
-
     val songImage =
         if (song.image == null)
             painterResource(id = R.drawable.song_cover)
@@ -64,11 +61,11 @@ fun SongListItem(
             Text(text = song.name, color = if (isCurrentlyPlaying) Color.Red else Color.Black)
         }
         IconButton(modifier = Modifier
-            .padding(end = 16.dp), onClick = { onPlayClicked(song); isPlaying = !isPlaying }) {
+            .padding(end = 16.dp), onClick = { onPlayClicked(song) }) {
             Icon(
                 modifier = Modifier
                     .size(20.dp),
-                imageVector = if (isPlaying)
+                imageVector = if (!isPaused)
                     ImageVector.vectorResource(id = R.drawable.pause_fill0_wght400_grad0_opsz48) else Icons.Default.PlayArrow,
                 contentDescription = null
             )

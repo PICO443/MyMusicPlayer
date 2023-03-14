@@ -1,18 +1,15 @@
 package com.pico.mymusicplayer.presentation.home
 
-import android.net.Uri
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.pico.mymusicplayer.R
-import com.pico.mymusicplayer.domain.model.Song
 import com.pico.mymusicplayer.presentation.home.components.SongListItem
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -31,12 +28,12 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel(), onSongClicked: (Strin
                 SongListItem(
                     song,
                     onSongClicked = {
-//                        viewModel.onEvent(HomeScreenUiEvents.SelectSong(it))
                         onSongClicked(song.id.toString())
                     },
-                    isCurrentlyPlaying = (uiState.currentlyPlayingSong?.id == song.id),
+                    isCurrentlyPlaying = (uiState.currentSong?.song?.id == song.id),
+                    isPaused = (if(uiState.currentSong?.song?.id == song.id) (uiState.currentSong.isPaused) else true),
                     onPlayClicked = {
-                        viewModel.onEvent(HomeScreenUiEvents.SelectSong(it))
+                        viewModel.onEvent(HomeScreenUiEvents.TogglePlay(it))
                     }
                 )
                 Spacer(modifier = Modifier.height(8.dp))

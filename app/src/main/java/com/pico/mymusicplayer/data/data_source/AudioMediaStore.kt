@@ -19,6 +19,7 @@ class AudioMediaStore @Inject constructor(private val appContext: Context) {
     @WorkerThread
     fun getAudioFiles(): List<Audio> {
         val audioList = mutableListOf<Audio>()
+
         appContext.contentResolver.query(
             MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
             projection,

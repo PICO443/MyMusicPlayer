@@ -3,10 +3,8 @@ package com.pico.mymusicplayer.domain.model
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
-import androidx.core.app.BundleCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
-import androidx.media3.session.MediaController
 
 data class Song(
     val id: Long,
@@ -16,7 +14,7 @@ data class Song(
     val duration: Long,
     val image: Bitmap?
 ) {
-    fun toMediaMetaData(): MediaItem {
+    fun toMediaItem(): MediaItem {
         val bundle = Bundle()
         bundle.putLong("duration", duration)
         bundle.putLong("songId", id)

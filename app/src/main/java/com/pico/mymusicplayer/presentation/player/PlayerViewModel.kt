@@ -10,10 +10,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.Player.Listener
-import androidx.media3.common.Player.MediaItemTransitionReason
-import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaController
-import androidx.media3.session.MediaSession
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
 import com.pico.mymusicplayer.domain.model.Song
@@ -96,7 +93,7 @@ class PlayerViewModel @Inject constructor(
             is PlayerUiEvents.Play -> {
                 currentPlayingSong?.apply {
                     if(id != uiState.currentSong?.id)
-                        player.setMediaItem(uiState.currentSong?.toMediaMetaData()!!)
+                        player.setMediaItem(uiState.currentSong?.toMediaItem()!!)
                 }
                 player.play()
             }
