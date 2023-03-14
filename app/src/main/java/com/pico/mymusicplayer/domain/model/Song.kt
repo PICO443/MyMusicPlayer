@@ -37,5 +37,16 @@ data class Song(
             }
         }
 
+        fun emptySong(): Song {
+            return Song(
+                name = "empty",
+                artist = "empty",
+                id = -1,
+                image = null,
+                uri = null,
+                duration = -1
+            )
+        }
+
     }
 }

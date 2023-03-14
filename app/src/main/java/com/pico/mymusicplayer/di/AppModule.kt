@@ -9,6 +9,7 @@ import com.pico.mymusicplayer.data.data_source.AudioMediaStore
 import com.pico.mymusicplayer.data.repository.SongRepositoryImpl
 import com.pico.mymusicplayer.domain.repository.SongRepository
 import com.pico.mymusicplayer.domain.use_case.GetSongsUseCase
+import com.pico.mymusicplayer.domain.use_case.TogglePlaySongUseCase
 import com.pico.mymusicplayer.media.PlaybackService
 import dagger.Module
 import dagger.Provides
@@ -46,5 +47,11 @@ object AppModule {
     @Singleton
     fun provideGetSongsUseCase(songRepository: SongRepository): GetSongsUseCase{
         return GetSongsUseCase(songRepository)
+    }
+
+    @Provides
+    @Singleton
+    fun provideToggleSongsUseCase(): TogglePlaySongUseCase{
+        return TogglePlaySongUseCase()
     }
 }

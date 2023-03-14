@@ -1,20 +1,20 @@
 package com.pico.mymusicplayer.presentation.player
 
-import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.media3.common.MediaItem
-import androidx.media3.common.Player
 import androidx.media3.common.Player.Listener
 import androidx.media3.session.MediaController
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
+import com.pico.mymusicplayer.common.Constants
+import com.pico.mymusicplayer.common.Resource
 import com.pico.mymusicplayer.domain.model.Song
 import com.pico.mymusicplayer.domain.use_case.GetSongsUseCase
+import com.pico.mymusicplayer.domain.use_case.TogglePlaySongUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -26,93 +26,102 @@ import javax.inject.Inject
 class PlayerViewModel @Inject constructor(
     private val futureMediaController: ListenableFuture<MediaController>,
     private val savedStateHandle: SavedStateHandle,
-    private val getSongsUseCase: GetSongsUseCase
+    private val getSongsUseCase: GetSongsUseCase,
+    private val togglePlaySongUseCase: TogglePlaySongUseCase
 ) : ViewModel() {
 
-    private lateinit var player: Player
+    private lateinit var mediaController: MediaController
 
-    private var currentPlayingSong: Song? = null
-
-    var uiState by mutableStateOf(PlayerUiState(isPlaying = false, currentPosition = flow {
+    private val currentPositionFlow = flow {
         while (true) {
             delay(100)
-            player.currentMediaItem?.apply {
-                if (Song.fromMediaItem(this).id.toString() == savedStateHandle["songId"])
-                    emit(player.currentPosition)
+            mediaController.currentMediaItem?.apply {
+                if (Song.fromMediaItem(this).id.toString() == savedStateHandle[Constants.PARAM_SONG_ID])
+                    emit(mediaController.currentPosition)
             }
         }
+    }
 
-    }))
+    var uiState by mutableStateOf(
+        PlayerUiState(
+            isPlaying = false,
+            currentPosition = currentPositionFlow,
+            currentSong = Song.emptySong()
+        )
+    )
         private set
 
     init {
-        viewModelScope.launch {
-            uiState =
-                uiState.copy(currentSong = getSongsUseCase().firstOrNull { it.id.toString() == savedStateHandle["songId"] })
-            getSongsUseCase().forEach {
-                Log.d("songIds", "id: ${it.id}")
-            }
-        }
         futureMediaController.addListener({
-            player = futureMediaController.get()
-            currentPlayingSong = if(player.currentMediaItem == null){
-                uiState.currentSong
-            } else {
-                Song.fromMediaItem(player.currentMediaItem!!)
+            /**
+             * 1. Initializing the mediaController
+             */
+            mediaController = futureMediaController.get()
+            /**
+             * 2. Initializing the uiState and if there is a song playing:
+             *  - If the playing song is the current song -> set uiState.isPlaying = MediaController.isPlaying
+             */
+            viewModelScope.launch {
+                when (val songs = getSongsUseCase()) {
+                    is Resource.Success -> {
+                        uiState = uiState.copy(
+                            currentSong = songs.data.first { it.id.toString() == savedStateHandle[Constants.PARAM_SONG_ID] },
+                            isPlaying = if ((mediaController.currentMediaItem != null) && (Song.fromMediaItem(
+                                    mediaController.currentMediaItem!!
+                                ).id.toString() == savedStateHandle[Constants.PARAM_SONG_ID])
+                            ) mediaController.isPlaying else false
+                        )
+                    }
+                    else -> {}
+                }
             }
-            player.addListener(object : Listener {
-                override fun onPlaybackStateChanged(playbackState: Int) {
-                    super.onPlaybackStateChanged(playbackState)
-                    when (playbackState) {
+            /**
+             * 3. Adding listeners to update the uiState according to the state of the player
+             */
+            mediaController.addListener(object : Listener {
 
-                    }
-                }
-
-                override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-                    super.onMediaItemTransition(mediaItem, reason)
-                    mediaItem?.apply {
-                        currentPlayingSong = Song.fromMediaItem(mediaItem)
-                    }
-                }
                 override fun onIsPlayingChanged(isPlaying: Boolean) {
                     super.onIsPlayingChanged(isPlaying)
-                    player.currentMediaItem?.apply {
-                        if (Song.fromMediaItem(this).id == uiState.currentSong?.id)
+                    mediaController.currentMediaItem?.apply {
+                        if (Song.fromMediaItem(this).id == uiState.currentSong.id)
                             uiState = uiState.copy(isPlaying = isPlaying)
                     }
 
                 }
 
             })
-            player.prepare()
+            mediaController.prepare()
         }, MoreExecutors.directExecutor())
     }
 
     fun onEvent(event: PlayerUiEvents) {
         when (event) {
             is PlayerUiEvents.Play -> {
-                currentPlayingSong?.apply {
-                    if(id != uiState.currentSong?.id)
-                        player.setMediaItem(uiState.currentSong?.toMediaItem()!!)
+                mediaController.currentMediaItem?.apply {
+                    if (Song.fromMediaItem(this).id != uiState.currentSong.id)
+                        mediaController.setMediaItem(uiState.currentSong.toMediaItem())
                 }
-                player.play()
+                mediaController.play()
             }
             is PlayerUiEvents.Pause -> {
-                player.pause()
+                mediaController.pause()
             }
             is PlayerUiEvents.TogglePlay -> {
-                uiState = if (uiState.isPlaying) {
-                    player.pause()
-                    uiState.copy(isPlaying = false)
-                } else {
-                    onEvent(PlayerUiEvents.Play)
-                    uiState.copy(isPlaying = true)
-                }
-
+                togglePlaySongUseCase(mediaController = mediaController, song = uiState.currentSong)
             }
             is PlayerUiEvents.SeekTo -> {
-                if(uiState.isPlaying){
-                    player.seekTo(event.position)
+                if (uiState.isPlaying) {
+                    mediaController.seekTo(event.position)
+                }
+            }
+            is PlayerUiEvents.FastSeekForward -> {
+                if (uiState.isPlaying) {
+                    mediaController.seekForward()
+                }
+            }
+            is PlayerUiEvents.FastSeekBackward -> {
+                if (uiState.isPlaying) {
+                    mediaController.seekBack()
                 }
             }
         }
@@ -122,7 +131,7 @@ class PlayerViewModel @Inject constructor(
 }
 
 data class PlayerUiState(
-    val currentSong: Song? = null,
+    val currentSong: Song,
     val isPlaying: Boolean,
     val currentPosition: Flow<Long>
 )
@@ -132,4 +141,6 @@ sealed class PlayerUiEvents {
     object Play : PlayerUiEvents()
     object Pause : PlayerUiEvents()
     object TogglePlay : PlayerUiEvents()
+    object FastSeekForward : PlayerUiEvents()
+    object FastSeekBackward : PlayerUiEvents()
 }

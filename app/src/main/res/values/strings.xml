@@ -2,4 +2,7 @@
     <string name="app_name">MyMusicPlayer</string>
     <string name="songs">Songs</string>
     <string name="song_cover">Song cover</string>
+    <string name="fast_rewind">fast rewind</string>
+    <string name="play">play</string>
+    <string name="fast_forward">fast forward</string>
 </resources>

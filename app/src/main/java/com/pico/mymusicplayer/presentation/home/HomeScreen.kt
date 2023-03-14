@@ -10,6 +10,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.pico.mymusicplayer.R
+import com.pico.mymusicplayer.common.Resource
 import com.pico.mymusicplayer.presentation.home.components.SongListItem
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -24,22 +25,37 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel(), onSongClicked: (Strin
                 .padding(16.dp)
                 .fillMaxSize()
         ) {
-            items(uiState.songs) { song ->
-                SongListItem(
-                    song,
-                    onSongClicked = {
-                        onSongClicked(song.id.toString())
-                    },
-                    isCurrentlyPlaying = (uiState.currentSong?.song?.id == song.id),
-                    isPaused = (if(uiState.currentSong?.song?.id == song.id) (uiState.currentSong.isPaused) else true),
-                    onPlayClicked = {
-                        viewModel.onEvent(HomeScreenUiEvents.TogglePlay(it))
+            when(uiState.songs){
+                is Resource.Loading -> {
+                    item {
+                        CircularProgressIndicator()
                     }
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Divider()
-                Spacer(modifier = Modifier.height(8.dp))
+                }
+                is Resource.Success -> {
+                    items(uiState.songs.data) { song ->
+                        SongListItem(
+                            song,
+                            onSongClicked = {
+                                onSongClicked(song.id.toString())
+                            },
+                            isCurrentlyPlaying = (uiState.currentSong?.song?.id == song.id),
+                            isPaused = (if(uiState.currentSong?.song?.id == song.id) (uiState.currentSong.isPaused) else true),
+                            onPlayClicked = {
+                                viewModel.onEvent(HomeScreenUiEvents.TogglePlay(it))
+                            }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Divider()
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
+                is Resource.Error -> {
+                    item {
+                        Text(text = uiState.songs.message)
+                    }
+                }
             }
+
         }
     }
 }

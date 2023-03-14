@@ -6,19 +6,23 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
 import androidx.media3.common.Player.Listener
 import androidx.media3.session.MediaController
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
+import com.pico.mymusicplayer.common.Resource
 import com.pico.mymusicplayer.domain.model.Song
 import com.pico.mymusicplayer.domain.use_case.GetSongsUseCase
+import com.pico.mymusicplayer.domain.use_case.TogglePlaySongUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    getSongsUseCase: GetSongsUseCase,
+    private val getSongsUseCase: GetSongsUseCase,
+    private val togglePlaySongUseCase: TogglePlaySongUseCase,
     private val futureMediaController: ListenableFuture<MediaController>
 ) : ViewModel() {
 
@@ -64,6 +68,16 @@ class HomeViewModel @Inject constructor(
                             currentSong = uiState.currentSong?.copy(isPaused = isPlaying.not())
                         )
                     }
+
+                    override fun onPlaybackStateChanged(playbackState: Int) {
+                        super.onPlaybackStateChanged(playbackState)
+                        when (playbackState) {
+                            Player.STATE_ENDED -> uiState = uiState.copy(currentSong = null)
+                            Player.STATE_BUFFERING -> {}
+                            Player.STATE_IDLE -> {}
+                            Player.STATE_READY -> {}
+                        }
+                    }
                 })
                 mediaController.prepare()
             }, MoreExecutors.directExecutor())
@@ -77,32 +91,14 @@ class HomeViewModel @Inject constructor(
                 mediaController.play()
             }
             is HomeScreenUiEvents.TogglePlay -> {
-                /**
-                 * Will pause or play the current song
-                 */
-                mediaController.currentMediaItem?.apply {
-                    if (Song.fromMediaItem(this).id == event.song.id) {
-                        if (mediaController.isPlaying)
-                            mediaController.pause()
-                        else
-                            mediaController.play()
-                        return
-                    }
-                }
-                /**
-                 * Will execute when:
-                 * - The player state is IDLE - isn't playing any song
-                 * - When start playing other song than the currently playing one
-                 */
-                mediaController.setMediaItem(event.song.toMediaItem())
-                mediaController.play()
+                togglePlaySongUseCase(mediaController, event.song)
             }
         }
     }
 }
 
 data class HomeUiState(
-    val songs: List<Song> = emptyList(),
+    val songs: Resource<List<Song>> = Resource.Loading(),
     val currentSong: CurrentSong? = null
 )
 
