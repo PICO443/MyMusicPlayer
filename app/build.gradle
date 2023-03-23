@@ -82,6 +82,9 @@ dependencies {
 //        // ViewModel utilities for Compose
 //        implementation "androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycle_version"
     implementation "androidx.lifecycle:lifecycle-viewmodel-compose:2.5.1"
+    // Audio Visualization
+    implementation 'com.github.lincollincol:amplituda:2.2.2'
+    implementation 'com.github.lincollincol:compose-audiowaveform:1.1.1'
 
 }
 // Allow references to generated code

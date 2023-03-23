@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -23,14 +24,18 @@ fun PlayerScreen(viewModel: PlayerViewModel = hiltViewModel()) {
         Column(
             modifier = Modifier
                 .padding(paddingValues)
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.Center
+                .padding(bottom = 16.dp)
+                .fillMaxSize(),
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             PlayerSongInfoSection(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 16.dp)
+                    .padding(top = 16.dp),
                 song = uiState.currentSong
             )
-            Spacer(modifier = Modifier.height(32.dp))
             PlayerControllersSection(
                 onPlayClicked = {
                     viewModel.onEvent(PlayerUiEvents.TogglePlay)

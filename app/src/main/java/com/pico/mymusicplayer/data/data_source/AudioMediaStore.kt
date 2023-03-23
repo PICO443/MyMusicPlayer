@@ -13,7 +13,8 @@ class AudioMediaStore @Inject constructor(private val appContext: Context) {
         MediaStore.Audio.Media._ID,
         MediaStore.Audio.Media.DISPLAY_NAME,
         MediaStore.Audio.Media.ARTIST,
-        MediaStore.Audio.Media.DURATION
+        MediaStore.Audio.Media.DURATION,
+        MediaStore.Audio.Media.DATA
     )
 
     @WorkerThread
@@ -31,6 +32,7 @@ class AudioMediaStore @Inject constructor(private val appContext: Context) {
             val nameColumnIndex = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DISPLAY_NAME)
             val artistColumnIndex = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
             val durationIndex = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
+            val dataIndex = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
             cursor.apply {
                 while (moveToNext()) {
                     audioList.add(
@@ -42,7 +44,8 @@ class AudioMediaStore @Inject constructor(private val appContext: Context) {
                             id = getLong(idColumnIndex),
                             name = getString(nameColumnIndex),
                             artist = getString(artistColumnIndex),
-                            duration = getLong(durationIndex)
+                            duration = getLong(durationIndex),
+                            path = getString(dataIndex)
                         )
                     )
                 }

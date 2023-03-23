@@ -13,9 +13,15 @@ import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
 import com.pico.mymusicplayer.common.Resource
 import com.pico.mymusicplayer.domain.model.Song
+import com.pico.mymusicplayer.domain.use_case.GetCurrentSongPositionUseCase
 import com.pico.mymusicplayer.domain.use_case.GetSongsUseCase
+import com.pico.mymusicplayer.domain.use_case.GetWaveformUseCase
 import com.pico.mymusicplayer.domain.use_case.TogglePlaySongUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -23,7 +29,9 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
     private val getSongsUseCase: GetSongsUseCase,
     private val togglePlaySongUseCase: TogglePlaySongUseCase,
-    private val futureMediaController: ListenableFuture<MediaController>
+    private val getWaveformUseCase: GetWaveformUseCase,
+    private val futureMediaController: ListenableFuture<MediaController>,
+    private val getCurrentSongPositionUseCase: GetCurrentSongPositionUseCase
 ) : ViewModel() {
 
     var uiState by mutableStateOf(HomeUiState())
@@ -33,55 +41,69 @@ class HomeViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            uiState = uiState.copy(songs = getSongsUseCase())
-
-            futureMediaController.addListener({
-                mediaController = futureMediaController.get()
-                // Getting the current playing song AFTER process death
-                mediaController.currentMediaItem?.apply {
-                    uiState = uiState.copy(
-                        currentSong = CurrentSong(
-                            song = Song.fromMediaItem(this),
-                            isPaused = mediaController.isPlaying.not()
+            uiState = uiState.copy(isLoading = true)
+            when (val songsList = getSongsUseCase()) {
+                is Resource.Success -> {
+                    uiState = uiState.copy(songs = songsList.data.map {
+                        it.copy(
+                            waveform = getWaveformUseCase(it.path!!)
                         )
+                    })
+                    uiState = uiState.copy(isLoading = false)
+                }
+                else -> {}
+            }
+        }
+        futureMediaController.addListener({
+            mediaController = futureMediaController.get()
+            // Getting the current playing song AFTER process death
+            mediaController.currentMediaItem?.apply {
+                uiState = uiState.copy(
+                    currentSong = CurrentSong(
+                        song = Song.fromMediaItem(this),
+                        isPaused = mediaController.isPlaying.not(),
+                        position = getCurrentSongPositionUseCase()
+                    )
+                )
+            }
+            mediaController.addListener(object : Listener {
+                // Called when the current playing song changes
+                override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                    super.onMediaItemTransition(mediaItem, reason)
+                    mediaItem?.apply {
+                        uiState =
+                            uiState.copy(
+                                currentSong = CurrentSong(
+                                    song = Song.fromMediaItem(
+                                        this
+                                    ),
+                                    isPaused = mediaController.isPlaying.not(),
+                                    position = getCurrentSongPositionUseCase()
+                                )
+                            )
+                    }
+                }
+
+                override fun onIsPlayingChanged(isPlaying: Boolean) {
+                    super.onIsPlayingChanged(isPlaying)
+                    uiState = uiState.copy(
+                        currentSong = uiState.currentSong?.copy(isPaused = isPlaying.not())
                     )
                 }
-                mediaController.addListener(object : Listener {
-                    // Called when the current playing song changes
-                    override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-                        super.onMediaItemTransition(mediaItem, reason)
-                        mediaItem?.apply {
-                            uiState =
-                                uiState.copy(
-                                    currentSong = CurrentSong(
-                                        song = Song.fromMediaItem(
-                                            this
-                                        ), isPaused = mediaController.isPlaying.not()
-                                    )
-                                )
-                        }
-                    }
 
-                    override fun onIsPlayingChanged(isPlaying: Boolean) {
-                        super.onIsPlayingChanged(isPlaying)
-                        uiState = uiState.copy(
-                            currentSong = uiState.currentSong?.copy(isPaused = isPlaying.not())
-                        )
+                override fun onPlaybackStateChanged(playbackState: Int) {
+                    super.onPlaybackStateChanged(playbackState)
+                    when (playbackState) {
+                        Player.STATE_ENDED -> uiState = uiState.copy(currentSong = null)
+                        Player.STATE_BUFFERING -> {}
+                        Player.STATE_IDLE -> {}
+                        Player.STATE_READY -> {}
                     }
+                }
+            })
+            mediaController.prepare()
+        }, MoreExecutors.directExecutor())
 
-                    override fun onPlaybackStateChanged(playbackState: Int) {
-                        super.onPlaybackStateChanged(playbackState)
-                        when (playbackState) {
-                            Player.STATE_ENDED -> uiState = uiState.copy(currentSong = null)
-                            Player.STATE_BUFFERING -> {}
-                            Player.STATE_IDLE -> {}
-                            Player.STATE_READY -> {}
-                        }
-                    }
-                })
-                mediaController.prepare()
-            }, MoreExecutors.directExecutor())
-        }
     }
 
     fun onEvent(event: HomeScreenUiEvents) {
@@ -93,17 +115,22 @@ class HomeViewModel @Inject constructor(
             is HomeScreenUiEvents.TogglePlay -> {
                 togglePlaySongUseCase(mediaController, event.song)
             }
+            is HomeScreenUiEvents.SeekTo -> {
+                mediaController.seekTo(event.position)
+            }
         }
     }
 }
 
 data class HomeUiState(
-    val songs: Resource<List<Song>> = Resource.Loading(),
+    val songs: List<Song> = emptyList(),
+    val isLoading: Boolean = true,
     val currentSong: CurrentSong? = null
 )
 
-data class CurrentSong(val song: Song, val isPaused: Boolean)
+data class CurrentSong(val song: Song, val isPaused: Boolean, val position: Flow<Long>)
 sealed class HomeScreenUiEvents {
     data class PlaySong(val song: Song) : HomeScreenUiEvents()
     data class TogglePlay(val song: Song) : HomeScreenUiEvents()
+    data class SeekTo(val position: Long): HomeScreenUiEvents()
 }

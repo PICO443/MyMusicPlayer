@@ -8,7 +8,9 @@ import com.google.common.util.concurrent.ListenableFuture
 import com.pico.mymusicplayer.data.data_source.AudioMediaStore
 import com.pico.mymusicplayer.data.repository.SongRepositoryImpl
 import com.pico.mymusicplayer.domain.repository.SongRepository
+import com.pico.mymusicplayer.domain.use_case.GetCurrentSongPositionUseCase
 import com.pico.mymusicplayer.domain.use_case.GetSongsUseCase
+import com.pico.mymusicplayer.domain.use_case.GetWaveformUseCase
 import com.pico.mymusicplayer.domain.use_case.TogglePlaySongUseCase
 import com.pico.mymusicplayer.media.PlaybackService
 import dagger.Module
@@ -16,6 +18,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import linc.com.amplituda.Amplituda
 import javax.inject.Singleton
 
 @Module
@@ -53,5 +56,23 @@ object AppModule {
     @Singleton
     fun provideToggleSongsUseCase(): TogglePlaySongUseCase{
         return TogglePlaySongUseCase()
+    }
+
+    @Provides
+    @Singleton
+    fun provideAmplituda(@ApplicationContext ctx: Context): Amplituda{
+        return Amplituda(ctx)
+    }
+
+    @Provides
+    @Singleton
+    fun provideGetWaveformUseCase(amplituda: Amplituda): GetWaveformUseCase{
+        return GetWaveformUseCase(amplituda)
+    }
+
+    @Provides
+    @Singleton
+    fun provideGetCurrentPositionUseCase(futureMediaController: ListenableFuture<MediaController>): GetCurrentSongPositionUseCase{
+        return GetCurrentSongPositionUseCase(futureMediaController)
     }
 }

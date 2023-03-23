@@ -12,6 +12,8 @@ data class Song(
     val name: String,
     val artist: String,
     val duration: Long,
+    val waveform: List<Int>? = null,
+    val path: String? = null,
     val image: Bitmap?
 ) {
     fun toMediaItem(): MediaItem {
